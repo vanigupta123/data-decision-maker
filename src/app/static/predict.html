@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Predict</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 42rem;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      line-height: 1.5;
+    }
+    fieldset { margin-bottom: 1.25rem; border: 1px solid #ccc; border-radius: 6px; padding: 1rem; }
+    legend { font-weight: 600; padding: 0 0.25rem; }
+    label { display: block; margin: 0.35rem 0; }
+    label.inline { display: inline-flex; align-items: center; gap: 0.4rem; margin-right: 1rem; }
+    input[type="number"], input[type="text"] { width: 100%; max-width: 16rem; padding: 0.35rem 0.5rem; }
+    .error { color: #b00020; font-size: 0.9rem; margin-top: 0.25rem; }
+    #result { margin-top: 1rem; padding: 1rem; background: #f5f5f5; border-radius: 6px; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+    button { margin-top: 0.5rem; padding: 0.5rem 1.25rem; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <h1>Prediction request</h1>
+  <p>Submit patient features to <code>POST /predict</code>.</p>
+
+  <form id="predict-form" novalidate>
+    <fieldset>
+      <legend>Patient</legend>
+      <label>
+        Patient weight (kg)
+        <input type="number" name="patient_weight" required min="1" step="1" />
+      </label>
+      <label class="inline">
+        <input type="checkbox" name="fibroid_present" />
+        Fibroid present
+      </label>
+      <label class="inline">
+        <input type="checkbox" name="prior_pregnancy" />
+        Prior pregnancy
+      </label>
+      <label>
+        Cycle length (days)
+        <input type="number" name="cycle_length_days" required min="1" step="1" />
+      </label>
+      <label>
+        Symptom duration (months)
+        <input type="number" name="symptom_duration_months" required min="0" step="1" />
+      </label>
+      <label>
+        Pain level (0–10)
+        <input type="number" name="pain_level" required min="0" max="10" step="1" />
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Age group <span aria-hidden="true">*</span></legend>
+      <label class="inline">
+        <input type="checkbox" class="single-select" data-group="age_group" data-value="18-29" />
+        18–29
+      </label>
+      <label class="inline">
+        <input type="checkbox" class="single-select" data-group="age_group" data-value="30-44" />
+        30–44
+      </label>
+      <label class="inline">
+        <input type="checkbox" class="single-select" data-group="age_group" data-value="45+" />
+        45+
+      </label>
+      <div id="age_group-error" class="error" hidden></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Treatment type <span aria-hidden="true">*</span></legend>
+      <label class="inline">
+        <input type="checkbox" name="treatment_type_hormonal" />
+        Hormonal
+      </label>
+      <label class="inline">
+        <input type="checkbox" name="treatment_type_none" />
+        None
+      </label>
+      <label class="inline">
+        <input type="checkbox" name="treatment_type_surgery" />
+        Surgery
+      </label>
+      <div id="treatment-error" class="error" hidden></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Ethnicity <span aria-hidden="true">*</span></legend>
+      <label class="inline">
+        <input type="checkbox" name="ethnicity_Asian" />
+        Asian
+      </label>
+      <label class="inline">
+        <input type="checkbox" name="ethnicity_Black" />
+        Black
+      </label>
+      <label class="inline">
+        <input type="checkbox" name="ethnicity_Hispanic" />
+        Hispanic
+      </label>
+      <label class="inline">
+        <input type="checkbox" name="ethnicity_Other" />
+        Other
+      </label>
+      <label class="inline">
+        <input type="checkbox" name="ethnicity_White" />
+        White
+      </label>
+      <div id="ethnicity-error" class="error" hidden></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Optional fibroid / labs</legend>
+      <label>
+        Number of fibroids
+        <input type="number" name="num_fibroids" min="0" step="1" />
+      </label>
+      <label>
+        Fibroid volume ratio
+        <input type="number" name="fibroid_volume_ratio" min="0" step="any" />
+      </label>
+      <label>
+        Ferritin proxy
+        <input type="number" name="ferritin_proxy" min="0" step="any" />
+      </label>
+    </fieldset>
+
+    <fieldset>
+      <legend>Flow intensity (optional)</legend>
+      <label class="inline">
+        <input type="checkbox" class="single-select" data-group="flow_intensity" data-value="light" />
+        Light
+      </label>
+      <label class="inline">
+        <input type="checkbox" class="single-select" data-group="flow_intensity" data-value="moderate" />
+        Moderate
+      </label>
+      <label class="inline">
+        <input type="checkbox" class="single-select" data-group="flow_intensity" data-value="heavy" />
+        Heavy
+      </label>
+      <label class="inline">
+        <input type="checkbox" class="single-select" data-group="flow_intensity" data-value="very heavy" />
+        Very heavy
+      </label>
+    </fieldset>
+
+    <button type="submit" id="submit-btn">Submit prediction</button>
+  </form>
+
+  <div id="result" hidden></div>
+
+  <script>
+    const form = document.getElementById("predict-form");
+    const resultEl = document.getElementById("result");
+    const submitBtn = document.getElementById("submit-btn");
+
+    // Single-select checkbox groups (age_group, flow_intensity)
+    document.querySelectorAll(".single-select").forEach((box) => {
+      box.addEventListener("change", () => {
+        if (!box.checked) return;
+        const group = box.dataset.group;
+        document
+          .querySelectorAll(`.single-select[data-group="${group}"]`)
+          .forEach((other) => {
+            if (other !== box) other.checked = false;
+          });
+      });
+    });
+
+    function showError(id, message) {
+      const el = document.getElementById(id);
+      if (!message) {
+        el.hidden = true;
+        el.textContent = "";
+        return;
+      }
+      el.hidden = false;
+      el.textContent = message;
+    }
+
+    function checkedValue(group) {
+      const el = document.querySelector(
+        `.single-select[data-group="${group}"]:checked`
+      );
+      return el ? el.dataset.value : null;
+    }
+
+    function anyChecked(names) {
+      return names.some((name) => form.elements[name]?.checked);
+    }
+
+    function intOrNull(name) {
+      const raw = form.elements[name].value.trim();
+      if (raw === "") return null;
+      const n = Number(raw);
+      return Number.isInteger(n) ? n : NaN;
+    }
+
+    function floatOrNull(name) {
+      const raw = form.elements[name].value.trim();
+      if (raw === "") return null;
+      const n = Number(raw);
+      return Number.isFinite(n) ? n : NaN;
+    }
+
+    function validate() {
+      let ok = true;
+      showError("age_group-error", "");
+      showError("treatment-error", "");
+      showError("ethnicity-error", "");
+
+      const pain = Number(form.elements.pain_level.value);
+      if (!Number.isInteger(pain) || pain < 0 || pain > 10) {
+        ok = false;
+        form.elements.pain_level.setCustomValidity("Pain level must be an integer from 0 to 10.");
+      } else {
+        form.elements.pain_level.setCustomValidity("");
+      }
+
+      if (!checkedValue("age_group")) {
+        showError("age_group-error", "Select exactly one age group.");
+        ok = false;
+      }
+
+      const treatmentNames = [
+        "treatment_type_hormonal",
+        "treatment_type_none",
+        "treatment_type_surgery",
+      ];
+      if (!anyChecked(treatmentNames)) {
+        showError("treatment-error", "Select at least one treatment type.");
+        ok = false;
+      }
+
+      const ethnicityNames = [
+        "ethnicity_Asian",
+        "ethnicity_Black",
+        "ethnicity_Hispanic",
+        "ethnicity_Other",
+        "ethnicity_White",
+      ];
+      if (!anyChecked(ethnicityNames)) {
+        showError("ethnicity-error", "Select at least one ethnicity.");
+        ok = false;
+      }
+
+      return ok && form.reportValidity();
+    }
+
+    function buildPayload() {
+      const ethnicityNames = [
+        "ethnicity_Asian",
+        "ethnicity_Black",
+        "ethnicity_Hispanic",
+        "ethnicity_Other",
+        "ethnicity_White",
+      ];
+      const treatmentNames = [
+        "treatment_type_hormonal",
+        "treatment_type_none",
+        "treatment_type_surgery",
+      ];
+
+      const payload = {
+        patient_weight: intOrNull("patient_weight"),
+        fibroid_present: form.elements.fibroid_present.checked,
+        cycle_length_days: intOrNull("cycle_length_days"),
+        symptom_duration_months: intOrNull("symptom_duration_months"),
+        pain_level: intOrNull("pain_level"),
+        age_group: checkedValue("age_group"),
+        prior_pregnancy: form.elements.prior_pregnancy.checked,
+        num_fibroids: intOrNull("num_fibroids"),
+        fibroid_volume_ratio: floatOrNull("fibroid_volume_ratio"),
+        ferritin_proxy: floatOrNull("ferritin_proxy"),
+        flow_intensity: checkedValue("flow_intensity"),
+      };
+
+      treatmentNames.forEach((name) => {
+        payload[name] = form.elements[name].checked;
+      });
+      ethnicityNames.forEach((name) => {
+        payload[name] = form.elements[name].checked;
+      });
+      return payload;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!validate()) return;
+
+      const payload = buildPayload();
+      submitBtn.disabled = true;
+      resultEl.hidden = false;
+      resultEl.textContent = "Submitting…";
+
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const text = await res.text();
+        let body;
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = text;
+        }
+        resultEl.textContent = res.ok
+          ? JSON.stringify(body, null, 2)
+          : `Error ${res.status}\n${typeof body === "string" ? body : JSON.stringify(body, null, 2)}`;
+      } catch (err) {
+        resultEl.textContent = `Request failed: ${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
