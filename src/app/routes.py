@@ -1,7 +1,7 @@
 from pathlib import Path
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from ..metrics.timer import timer
+from ..utils.timer import timer
 from ..pipeline.ingest import ingest
 from ..pipeline.preprocess import preprocess
 from ..pipeline.inference import inference
@@ -46,7 +46,7 @@ async def predict(request: Request, model=Depends(get_model), batcher=Depends(ge
             total_ms = t.ms
         timings = {"ingest": ingest_ms, "preprocess": preprocess_ms, "inference": inference_ms, "decision": decision_ms, "total": total_ms}
         log_request(request_id=str(req.request_id), timings_ms=timings, counters=counters, status="success", decision=dec)
-        return {"decision": dec, "timing_ms:": timings}
+        return {"decision": dec, "timing_ms": timings}
     except Exception as e:
         request_id = str(req.request_id) if req is not None else None
         log_request(request_id=request_id, timings_ms=timings, counters=counters, status="failure", decision=dec, error=str(e), error_type=type(e).__name__)
