@@ -68,10 +68,16 @@ to get latency metrics:
 uvicorn src.app.main:app
 python -m src.experiments.load_test -c -r 20 -u http://127.0.0.1:8000/predict
 ```
-this example utilizes "-c" and "-r 20" to specify the latency test should run on 20 requests concurrently. be sure to specify the url within "-u <url>" or modify the code within `load_test.py` so that the default url value is your localhost. if you leave out the "-u <url" parameter and run the program without modification, it will default to my localhost.
+this example utilizes "-c" and "-r 20" to specify the latency test should run on 20 requests concurrently. be sure to specify the url within "-u <url>" or modify the code within `load_test.py` so that the default url value is your localhost. if you leave out the "-u <url>" parameter and run the program without modification, it will default to my localhost.
 
 ## how to run with modal
 make sure you have modal configured on your device, and then run:
 ```
 modal deploy modal_app.py
+```
+then go to the link in your console!
+
+once your done, simply run
+```
+modal app stop data-decision-inference-api
 ```
