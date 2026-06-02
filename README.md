@@ -24,13 +24,13 @@ more architecture details here
 
 past 40% missing rate, decision flip rate exceeds 33%. at this point, the system abstains rather than producing an unreliable output.
 
-latency stats, at 20 requests:
+latency stats, at 500 requests:
 | category  | latency (ms)  |
 |-----------|---------------|
-| average   | 0.1327ms      | 
-| P50       | 0.0686ms      | 
-| P90       | 0.2314ms      | 
-| P99       | 0.6585ms      | 
+| average   | 0.0830ms      | 
+| P50       | 0.0654ms      | 
+| P90       | 0.0985ms      | 
+| P99       | 0.3635ms      | 
 
 ## how to run locally
 if you haven't already:
