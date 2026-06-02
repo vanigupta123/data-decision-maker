@@ -7,9 +7,21 @@ this system is a direct response to that gap. it models when it's appropriate to
 this also serves as the inference and data quality layer for the [digital twin project](https://github.com/vanigupta123/uf_digital_twin/tree/main). the digital twin needs a way to reason about when its synthetic and real data is trustworthy enough to drive a decision, which is the focus of this project.
 
 ## the architecture, in greater depth
-more architecture details here
+the system is a fastapi inference pipeline with four stages: ingest, preprocess, inference, and decision. 
 
+`ingest.py` validates incoming requests against a schema, rejecting payloads that have empty or invalid values in required fields. optional fields, like ferritin, fibroid count, flow intensity, are allowed to be absent.
 
+`preprocess.py` transforms raw clinical data into a fixed-size float vector matching the trained model's expected input. missing numeric fields are filled with training-set medians, missing categorical fields are indicated in an additional column, and relevant numerical values are normalized. bernoulli feature masking is used to make the dataset's true missing value rate match the configurable missing rate used for the instability experiments.
+
+`inference.py` runs a single forward pass through a two-layer mlp (64 → 32 → 1) trained on synthetic clinical data with realistic missingness patterns. the model outputs a logit, converted to a probability via a sigmoid function.
+
+`decision.py` uses thresholds to process the score into a binary prediction and evaluates whether the system should abstain. abstention fires when the proportion of missing features in the incoming request exceeds a calibrated threshold, which was determined empirically by the instability sweep. when the system abstains, it returns abstained: true with a reason, rather than returning a prediction it can't justify.
+
+`instability_sweep.py` is an offline experiment that sends the same patient payload 50 times per missing rate (0–80%), varying only the random seed for bernoulli masking. it measures score variance, decision flip rate, and abstention rate at each level. this is where the missing rate threshold from `decision.py` is determined.
+
+`load_test.py` implements concurrent HTTP requests against the running inference endpoint. each request is individually timed, and the script computes p50, p90, and p99 latency across all requests. 
+
+results from instability sweep experiment:
 | missing rate  | score variance  | flip rate  | abstention rate |
 |---------------|-----------------|------------|-----------------|
 | 0.0   | 0.0             | 0.0        | 0.0             |
