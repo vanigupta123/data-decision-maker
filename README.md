@@ -9,7 +9,7 @@ this also serves as the inference and data quality layer for the [digital twin p
 ## the architecture, in greater depth
 the system is a fastapi inference pipeline with four stages: ingest, preprocess, inference, and decision. 
 
-`ingest.py` validates incoming requests against a schema, rejecting payloads that have empty or invalid values in required fields. optional fields, like ferritin, fibroid count, flow intensity, are allowed to be absent.
+`ingest.py` validates incoming requests against a schema, rejecting payloads that have empty or invalid values in required fields. optional fields, like ferritin, fibroid count, and flow intensity, are allowed to be absent.
 
 `preprocess.py` transforms raw clinical data into a fixed-size float vector matching the trained model's expected input. missing numeric fields are filled with training-set medians, missing categorical fields are indicated in an additional column, and relevant numerical values are normalized. bernoulli feature masking is used to make the dataset's true missing value rate match the configurable missing rate used for the instability experiments.
 
@@ -19,7 +19,7 @@ the system is a fastapi inference pipeline with four stages: ingest, preprocess,
 
 `instability_sweep.py` is an offline experiment that sends the same patient payload 50 times per missing rate (0–80%), varying only the random seed for bernoulli masking. it measures score variance, decision flip rate, and abstention rate at each level. this is where the missing rate threshold from `decision.py` is determined.
 
-`load_test.py` implements concurrent HTTP requests against the running inference endpoint. each request is individually timed, and the script computes p50, p90, and p99 latency across all requests. 
+`load_test.py` implements concurrent http requests against the running inference endpoint. each request is individually timed, and the script computes p50, p90, and p99 latency across all requests. 
 
 results from instability sweep experiment:
 | missing rate  | score variance  | flip rate  | abstention rate |
@@ -45,10 +45,6 @@ latency stats, at 500 requests:
 | P99       | 0.3635ms      | 
 
 ## how to run locally
-if you haven't already:
-```
-pip install -r requirements.txt
-```
 to run the inference api and retrieve the decision with timing metrics:
 ```
 pip install -r requirements.txt
