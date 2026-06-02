@@ -1,6 +1,7 @@
 import asyncio
 import httpx
 import numpy as np
+from pathlib import Path
 
 data = {'patient_weight': 37, 'fibroid_present': True, 'cycle_length_days': 32, 'symptom_duration_months': 13, 
 'pain_level': 6, 'age_group': '30-44', 'prior_pregnancy': True, 'num_fibroids': None, 'fibroid_volume_ratio': None, 'ferritin_proxy': None, 
@@ -8,7 +9,8 @@ data = {'patient_weight': 37, 'fibroid_present': True, 'cycle_length_days': 32, 
 'ethnicity_Black': False, 'ethnicity_Hispanic': True, 'ethnicity_Other': False, 'ethnicity_White': False}
 
 async def run():
-    with open('docs/results/instability.csv', 'w') as f:
+    csv_path = Path(__file__).parent.parent / "docs" / "results" / "instability.csv"
+    with open(csv_path, 'w') as f:
         f.write("missing rate,score variance,flip rate,abstention rate\n")
     for missing_rate in np.arange(0.0, 0.9, 0.1):
         # run 50 trials with different seeds
@@ -23,8 +25,9 @@ async def run():
             if res["abstained"]:
                 abstention_count += 1
             scores.append(res["score"])
+        print(scores)
         score_variance = np.var(scores)
-        with open('docs/results/instability.csv', 'a') as f:
+        with open(csv_path, 'a') as f:
             f.write(f"{missing_rate:.2f},{score_variance},{flip_count/50},{abstention_count/50}\n")
         print(f"at missing_rate={missing_rate:.2f}, flip_rate={flip_count/50} — above this threshold decisions are unjustifiable")
 

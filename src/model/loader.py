@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+from pathlib import Path
 
 def load_model():
     handler = ModelHandle()
@@ -22,7 +23,8 @@ class ModelHandle:
         )
 
     def load(self):
-        state_dict = torch.load("src/model/artifacts/model.pth", map_location=self.device)
+        model_path = Path(__file__).parent.parent / "model" / "artifacts" / "model.pth"
+        state_dict = torch.load(model_path, map_location=self.device)
         self.model.load_state_dict(state_dict)
         self.model.eval()
         return self.model

@@ -3,8 +3,10 @@ import torch
 import numpy as np
 from fastapi import HTTPException, status
 from ..pipeline.ingest import Request
+from pathlib import Path
 
-with open('src/model/artifacts/preprocessing_stats.json', 'r') as file:
+STATS_PATH = Path(__file__).parent.parent / "model" / "artifacts" / "preprocessing_stats.json"
+with open(STATS_PATH, 'r') as file:
     DATA = json.load(file)
 
 def preprocess(request: Request):
