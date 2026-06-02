@@ -77,7 +77,7 @@ modal deploy modal_app.py
 ```
 then go to the link in your console!
 
-once your done, simply run
+once you're done, simply run
 ```
 modal app stop data-decision-inference-api
 ```
