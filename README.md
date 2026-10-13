@@ -25,16 +25,16 @@ results from instability sweep experiment:
 | missing rate  | score variance  | flip rate  | abstention rate |
 |---------------|-----------------|------------|-----------------|
 | 0.0   | 0.0             | 0.0        | 0.0             |
-| 0.1   | 4.6218e-07      | 0.06       | 0.0             |
-| 0.2   | 2.1971e-04      | 0.16       | 0.0             |
-| 0.3   | 2.9352e-03      | 0.24       | 1.0             |
-| 0.4   | 4.1755e-03      | 0.38       | 1.0             |
-| 0.5   | 9.3837e-03      | 0.46       | 1.0             |
-| 0.6   | 0.0186          | 0.56       | 1.0             |
-| 0.7   | 0.0277          | 0.98       | 1.0             |
-| 0.8   | 0.0314          | 0.98       | 1.0             |
+| 0.1   | 1.8460e-03      | 0.0        | 0.0             |
+| 0.2   | 5.7156e-03      | 0.0        | 0.0             |
+| 0.3   | 0.0165          | 0.02       | 0.0             |
+| 0.4   | 0.0191          | 0.02       | 0.0             |
+| 0.5   | 0.0248          | 0.04       | 0.0             |
+| 0.6   | 0.0263          | 0.06       | 1.0             |
+| 0.7   | 0.0245          | 0.10       | 1.0             |
+| 0.8   | 0.0220          | 0.14       | 1.0             |
 
-past 40% missing rate, decision flip rate exceeds 33%. at this point, the system abstains rather than producing an unreliable output.
+a flip is counted when a trial's decision (score ≥ 0.5) differs from the baseline decision at 0% missing. with a 5% flip tolerance, the threshold falls between 50% missing (4% flips) and 60% missing (6% flips), so the system abstains when more than 50% of features are missing rather than producing an unreliable output.
 
 latency stats, at 500 requests:
 | category  | latency (ms)  |

@@ -9,18 +9,22 @@ data = {'patient_weight': 37, 'fibroid_present': True, 'cycle_length_days': 32, 
 'ethnicity_Black': False, 'ethnicity_Hispanic': True, 'ethnicity_Other': False, 'ethnicity_White': False}
 
 async def run():
-    csv_path = Path(__file__).parent.parent / "docs" / "results" / "instability.csv"
+    csv_path = Path(__file__).parent.parent.parent / "docs" / "results" / "instability.csv"
     with open(csv_path, 'w') as f:
         f.write("missing rate,score variance,flip rate,abstention rate\n")
+    # baseline: send the payload once with no injected missingness and record its label
+    async with httpx.AsyncClient() as client:
+        baseline = await run_trial(client, data, 0.0, 0)
+    baseline_label = baseline["decision"]["score"] >= 0.5
+    print(f"baseline score={baseline['decision']['score']}, label={int(baseline_label)}")
     for missing_rate in np.arange(0.0, 0.9, 0.1):
         # run 50 trials with different seeds
         results = await run_sweep(data, missing_rate.item()) # should not gather and run this concurrently because uvicorn won't be able to and it will increase noise
-        init_score = results[0]["score"]
         scores = []
-        flip_count = 0 # how many times label changes vs trial 0
+        flip_count = 0 # how many times label differs from the baseline label
         abstention_count = 0
         for res in results:
-            if res["score"] != init_score:
+            if (res["score"] >= 0.5) != baseline_label:
                 flip_count += 1
             if res["abstained"]:
                 abstention_count += 1
@@ -39,7 +43,7 @@ async def run_sweep(data, missing_rate):
     return results
 
 async def run_trial(client, payload, missing_rate, seed):
-    payload["run_config"] = {"missing_rate": missing_rate, "seed": seed}
+    payload = {**payload, "run_config": {"missing_rate": missing_rate, "seed": seed}}
     response = await client.post("http://127.0.0.1:8000/predict", json=payload)
     return response.json()
 

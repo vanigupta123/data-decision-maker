@@ -25,13 +25,12 @@ class Features:
         # fill missing values with fixed default values
         # normalize fixed constants
         d = dict()
-        cols = ["patient_id", "patient_weight", "num_fibroids", "fibroid_volume_ratio", 
+        cols = ["patient_weight", "num_fibroids", "fibroid_volume_ratio", 
         "ferritin_proxy", "cycle_length_days", "flow_intensity", "symptom_duration_months", 
         "pain_level", "age_group_encoded", "prior_pregnancy", "flow_intensity_missing", 
         "treatment_type_hormonal", "treatment_type_none", "treatment_type_surgery", 
         "ethnicity_Asian", "ethnicity_Black", "ethnicity_Hispanic", "ethnicity_Other", "ethnicity_White"]
         d = {k: None for k in cols}        
-        d["patient_id"] = self.request_id
 
         normalize_cols = ["cycle_length_days", "symptom_duration_months", "pain_level", "ferritin_proxy"]
         optional_cols = ["num_fibroids", "fibroid_volume_ratio", "ferritin_proxy", "flow_intensity", "flow_intensity_missing"]

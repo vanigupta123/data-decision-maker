@@ -15,7 +15,7 @@ class ModelHandle:
     
     def build_model(self) -> nn.Module:
         return nn.Sequential(
-            nn.Linear(20, 64),
+            nn.Linear(19, 64),
             nn.ReLU(),
             nn.Linear(64, 32),
             nn.ReLU(),
